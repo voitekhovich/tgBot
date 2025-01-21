@@ -1,18 +1,25 @@
 require('dotenv').config(); // Подключение dotenv для загрузки переменных окружения
 const fs = require("fs");
 const TelegramBot = require('node-telegram-bot-api');
+
 const handlers = require('./commands/handlers'); // Импорт функций для команд
 const checkMessage = require('./commands/patterns');
 
 // Укажите токен вашего бота
 const token = process.env.TELEGRAM_TOKEN;
-const bot = new TelegramBot(token, { polling: true, interval: 500 });
+const bot = new TelegramBot(token, { polling: true, interval: 700 });
+
+// Запоминаем последнее сообщение с url
+// const lastMsg = {
+//   url: '',
+//   mesgId: ''
+// };
 
 // Меню команд
 const menuCommands = [
   {
       command: "img",
-      description: "Получить аниме картинку"
+      description: "Мне повезёт!"
   },
 ]
 
@@ -21,7 +28,7 @@ bot.setMyCommands(menuCommands);
 // Маппинг команд: команда => обработчик
 const commands = {
   '/start': handlers.handleStart,
-  '/text': handlers.handleText,
+  '/sum': handlers.handleText,
   '/sticker': handlers.handleSticker,
   '/gif': handlers.handleGif,
   '/img': handlers.handlePhoto,
@@ -57,9 +64,9 @@ bot.onText(/\/\w+/, (msg, match) => {
 
 // Обработка всех остальных сообщений
 bot.on('message', (msg) => {
+
   checkMessage.checkMessageAndSendSticker(msg)
   .then(img => {
-    // console.log(img);
     if (!img) return;
     const imgStream = fs.createReadStream(img);
     bot.sendSticker(msg.chat.id, imgStream, {
@@ -68,8 +75,21 @@ bot.on('message', (msg) => {
     .catch(err => console.log(err));
   })
 
+  // func.getUrlFromMessage(msg.text)
+  // .then(url => {
+  //   if (url != null) {
+  //     lastMsg.mesgId = msg.message_id;
+  //     lastMsg.url = url;
+  //   }
+  // })
+ 
+
   // if (!msg.text.startsWith('/')) {
   //   bot.sendMessage(msg.chat.id, 'Извините, я понимаю только команды.');
   // }
 
+});
+
+bot.on("polling_error", (error) => {
+  console.log(error);
 });

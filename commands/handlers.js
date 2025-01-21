@@ -1,4 +1,4 @@
-const { getImageFromAPI } = require('../helpers/utils'); // Импорт вспомогательных функций
+const { getImageFromAPI, getUrlFromMessage } = require('../helpers/utils'); // Импорт вспомогательных функций
 
 // Обработчик команды /start
 function handleStart(msg) {
@@ -6,8 +6,8 @@ function handleStart(msg) {
 }
 
 // Обработчик команды /text
-function handleText() {
-  return 'Это текстовый ответ на твою команду!';
+function handleText(msg) {
+  return getUrlFromMessage(msg);
 }
 
 // Обработчик команды /sticker
@@ -27,7 +27,7 @@ async function handlePhoto() {
     return { type: 'photo', value: imageUrl, caption: '', has_spoiler: true };
   } catch (error) {
     console.error('Ошибка получения изображения:', error);
-    return 'Произошла ошибка при получении изображения.';
+    return `Произошла ошибка при получении изображения.\n${error.message.split('\n')[0]}`;
   }
 }
 
