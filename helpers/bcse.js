@@ -42,8 +42,16 @@ const getDateTime = () => {
   return moment().format("HH:mm DD.MM");
 };
 
+const currencySymbols = {
+  USD: '$',
+  EUR: '€',
+  RUB: '₽',
+  CNY: '¥',
+};
+
 const getText = (obj) => {
-  return `${obj.name} ${obj.value} ${obj.inf > 0 ? "↑" : "↓"}`;
+  const symbol = currencySymbols[obj.name] || obj.name;
+  return `${symbol} ${obj.value} ${obj.inf > 0 ? "↑" : "↓"}`;
 };
 
 const toText = (dataArray) => {
