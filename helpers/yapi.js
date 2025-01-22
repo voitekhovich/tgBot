@@ -1,6 +1,6 @@
 const YA_300_API = 'https://300.ya.ru/api/sharing-url';
 
-exports.request = (token, article_url) => {
+exports.yapi = (token, article_url) => {
   return fetch(YA_300_API, {
     method: 'POST',
     headers: {

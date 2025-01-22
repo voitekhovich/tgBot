@@ -1,4 +1,8 @@
-const { getImageFromAPI, getUrlFromMessage } = require('../helpers/utils'); // Импорт вспомогательных функций
+const { getImageFromAPI, getUrlFromMessage } = require('../helpers/utils');
+const { getBcse, toTextOfValues } = require('../helpers/bcse');
+// const { yapi } = require('../helpers/yapi');
+
+// const YA_300_TOKEN = process.env.YA_300_TOKEN;
 
 // Обработчик команды /start
 function handleStart(msg) {
@@ -11,8 +15,8 @@ function handleText(msg) {
 }
 
 // Обработчик команды /sticker
-function handleSticker() {
-  return { type: 'sticker', value: 'https://tlgrm.ru/_/stickers/a5f/f5c/a5ff5c50-d8f5-49eb-b8be-d7f104fd7ad1/7.webp' };
+function handleSticker(img) {
+  return { type: 'sticker', value: img };
 }
 
 // Обработчик команды /gif
@@ -31,6 +35,43 @@ async function handlePhoto() {
   }
 }
 
+async function handleBcse() {
+  try {
+    const data = await getBcse();
+    return toTextOfValues(data, ['USD','EUR','RUB'], false)
+  } catch (error) {
+    console.error(error);
+    return `Ошибка.\nДенег нет, но вы держитесь`
+  }
+}
+
+// async function handleYapi(msg) {
+//   const url = getUrlFromMessage(msg);
+
+//    if (url === '') return 'Отправьте ссылку на статью в чат и повторите запрос';
+
+//    // const last_url = 'https://habr.com/ru/articles/822121';
+ 
+//    const msgWait = await sendMsg('Отправляю ссылку ФСБ-шникам...', msg, true, lastMsg.mesgId)
+//    // console.log(msgWait);
+ 
+//    yapi(YA_300_TOKEN, lastMsg.url)
+//      .then(json => {
+//        editMsg('Ответ получен, осталось обработать...', msgWait)
+//        return json
+//      })
+//      .then(json => func.getDataFromDOM(json.sharing_url))
+//      .then(data => editMsg(data, msgWait, true))
+//      .then(() => {
+//        lastMsg.mesgId = '';
+//        lastMsg.url = ''
+//      })
+//      .catch(err => {
+//        console.log(err)
+//        editMsg('ФСБ-шники не ответили :(', msgWait)
+//      })
+// }
+
 // Экспорт функций
 module.exports = {
   handleStart,
@@ -38,4 +79,6 @@ module.exports = {
   handleSticker,
   handleGif,
   handlePhoto,
+  handleBcse,
+  // handleYapi
 };

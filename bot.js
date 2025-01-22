@@ -5,11 +5,13 @@ const TelegramBot = require('node-telegram-bot-api');
 const handlers = require('./commands/handlers'); // Импорт функций для команд
 const checkMessage = require('./commands/patterns');
 
+process.env.NTBA_FIX_350 = true;  // Фикс, убирает уведомление о неподдерживаемой функции отправки файлов
+
 // Укажите токен вашего бота
 const token = process.env.TELEGRAM_TOKEN;
 const bot = new TelegramBot(token, { polling: true, interval: 700 });
 
-// Запоминаем последнее сообщение с url
+// Последнее сообщение с url ссылкой
 // const lastMsg = {
 //   url: '',
 //   mesgId: ''
@@ -18,8 +20,16 @@ const bot = new TelegramBot(token, { polling: true, interval: 700 });
 // Меню команд
 const menuCommands = [
   {
-      command: "img",
-      description: "Мне повезёт!"
+    command: "img",
+    description: "Мне повезёт!"
+  },
+  // {
+  //   command: "300",
+  //   description: "Пересказ статьи по ссылке"
+  // },
+  {
+    command: "byn",
+    description: "Проверяем курс $€₽"
   },
 ]
 
@@ -27,20 +37,15 @@ bot.setMyCommands(menuCommands);
 
 // Маппинг команд: команда => обработчик
 const commands = {
-  '/start': handlers.handleStart,
-  '/sum': handlers.handleText,
-  '/sticker': handlers.handleSticker,
-  '/gif': handlers.handleGif,
   '/img': handlers.handlePhoto,
+  '/byn': handlers.handleBcse,
+  // '/300': handlers.handleYapi,
 };
 
 // Функция для обработки команд
 const handleCommand = async (command, msg) => {
   const handler = commands[command];
-  if (!handler) {
-    bot.sendMessage(msg.chat.id, 'Извините, я не знаю такой команды.');
-    return;
-  }
+  if (!handler) return;
 
   const result = await handler(msg);
 
@@ -56,6 +61,7 @@ const handleCommand = async (command, msg) => {
   (actions[result?.type] || actions.default)();
 };
 
+
 // Обработчик всех команд
 bot.onText(/\/\w+/, (msg, match) => {
   const command = match[0]; // Извлекаем команду из текста
@@ -66,30 +72,20 @@ bot.onText(/\/\w+/, (msg, match) => {
 bot.on('message', (msg) => {
 
   checkMessage.checkMessageAndSendSticker(msg)
-  .then(img => {
-    if (!img) return;
-    const imgStream = fs.createReadStream(img);
-    bot.sendSticker(msg.chat.id, imgStream, {
-      reply_to_message_id: msg.message_id
+    .then(img => {
+      if (!img) return;
+      const imgStream = fs.createReadStream(img);
+      bot.sendSticker(msg.chat.id, imgStream, {
+        reply_to_message_id: msg.message_id
+      })
+        .catch(err => console.log(err))
     })
-    .catch(err => console.log(err));
-  })
 
-  // func.getUrlFromMessage(msg.text)
-  // .then(url => {
-  //   if (url != null) {
-  //     lastMsg.mesgId = msg.message_id;
-  //     lastMsg.url = url;
-  //   }
-  // })
- 
-
-  // if (!msg.text.startsWith('/')) {
-  //   bot.sendMessage(msg.chat.id, 'Извините, я понимаю только команды.');
-  // }
+    // checkMessage.checkMessageOnUrl(msg)
 
 });
 
-bot.on("polling_error", (error) => {
+// Обработка ошибок поллинга
+bot.on('polling_error', (error) => {
   console.log(error);
 });
