@@ -3,7 +3,7 @@ const fs = require("fs");
 const TelegramBot = require('node-telegram-bot-api');
 
 const handlers = require('./commands/handlers'); // Импорт функций для команд
-const checkMessage = require('./commands/patterns');
+const patterns = require('./commands/patterns');
 
 process.env.NTBA_FIX_350 = true;  // Фикс, убирает уведомление о неподдерживаемой функции отправки файлов
 
@@ -12,10 +12,10 @@ const token = process.env.TELEGRAM_TOKEN;
 const bot = new TelegramBot(token, { polling: true, interval: 700 });
 
 // Последнее сообщение с url ссылкой
-// const lastMsg = {
-//   url: '',
-//   mesgId: ''
-// };
+const lastMsg = {
+  url: '',
+  mesgId: ''
+};
 
 // Меню команд
 const menuCommands = [
@@ -23,10 +23,10 @@ const menuCommands = [
     command: "img",
     description: "Мне повезёт!"
   },
-  // {
-  //   command: "300",
-  //   description: "Пересказ статьи по ссылке"
-  // },
+  {
+    command: "300",
+    description: "Пересказ статьи по ссылке"
+  },
   {
     command: "byn",
     description: "Проверяем курс $€₽"
@@ -39,7 +39,7 @@ bot.setMyCommands(menuCommands);
 const commands = {
   '/img': handlers.handlePhoto,
   '/byn': handlers.handleBcse,
-  // '/300': handlers.handleYapi,
+  '/300': (msg) => handlers.handleYapi(lastMsg),
 };
 
 // Функция для обработки команд
@@ -54,6 +54,7 @@ const handleCommand = async (command, msg) => {
     sticker: () => bot.sendSticker(msg.chat.id, result.value),
     photo: () => bot.sendPhoto(msg.chat.id, result.value, { caption: result.caption, has_spoiler: result.has_spoiler }),
     animation: () => bot.sendAnimation(msg.chat.id, result.value),
+    html: () => bot.sendMessage(msg.chat.id, result.data, { parse_mode: "HTML", reply_to_message_id: result.msgId }),
     default: () => bot.sendMessage(msg.chat.id, result || 'Команда обработана.'),
   };
 
@@ -69,9 +70,9 @@ bot.onText(/\/\w+/, (msg, match) => {
 });
 
 // Обработка всех остальных сообщений
-bot.on('message', (msg) => {
+bot.on('message', async (msg) => {
 
-  checkMessage.checkMessageAndSendSticker(msg)
+  patterns.checkMessageAndSendSticker(msg)
     .then(img => {
       if (!img) return;
       const imgStream = fs.createReadStream(img);
@@ -81,7 +82,11 @@ bot.on('message', (msg) => {
         .catch(err => console.log(err))
     })
 
-    // checkMessage.checkMessageOnUrl(msg)
+  const url = await patterns.getUrlFromMessage(msg.text);
+  if (url != null) {
+    lastMsg.mesgId = msg.message_id;
+    lastMsg.url = url;
+  }
 
 });
 

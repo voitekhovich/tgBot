@@ -1,5 +1,3 @@
-const { getUrlFromMessage } = require('../helpers/utils');
-
 async function checkMessageAndSendSticker(msg) {
   const patterns = [
     { regex: /^\s*[hnн]\s?[eе]\s?[tт][ьъ]?\s*[.,!:=()Dd]*\s*$/i, image: './images/goose-pdr.png' },
@@ -21,15 +19,14 @@ async function checkMessageAndSendSticker(msg) {
   }
 }
 
-// async function checkMessageOnUrl(msg) {
-//   const url = await getUrlFromMessage(msg.text);
-//   if (url != null) {
-//     return {mesgId: msg.message_id, url: url}
-//   }
-// }
+function getUrlFromMessage(msg) {
+  const urlRegex = /(https?:\/\/)?([\w-]{1,32}\.[\w-]{1,32})[^\s@]*/gm;
+  const found = msg.match(urlRegex);
+  return found ? found[0] : null;
+}
 
 // Экспорт функций
 module.exports = {
   checkMessageAndSendSticker,
-  // checkMessageOnUrl
+  getUrlFromMessage
 };

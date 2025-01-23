@@ -1,4 +1,7 @@
 // Функция для получения изображения из API
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
+
 async function getImageFromAPI() {
   try {
     const response = await fetch('https://api.nekosapi.com/v4/images/random');
@@ -15,10 +18,19 @@ async function getImageFromAPI() {
   }
 }
 
-// function getUrlFromMessage(msg) {
-//   const urlRegex = /(https?:\/\/)?([\w-]{1,32}\.[\w-]{1,32})[^\s@]*/gm;
-//   const found = msg.match(urlRegex);
-//   return found ? found[0] : null;
-// };
+function getDataFromDOM(url){
+  return JSDOM.fromURL(url)
+    .then((dom) => {
+      const header = dom.window.document.querySelector(".summary-text").firstElementChild.textContent;
+      const elements = dom.window.document.querySelector(".summary-text").lastElementChild.childNodes;
+      
+      let content = '';
+      for (let elem of elements) {
+        content += `${elem.textContent}`;
+      }
+      const result = content.split("•").filter(Boolean).map(item => `• ${item.trim()}`).join('\n');
+      return `<b>${header}</b>\n\n${result}`;
+    })
+}
 
-module.exports = { getImageFromAPI };
+module.exports = { getImageFromAPI, getDataFromDOM };
