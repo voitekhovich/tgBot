@@ -28,7 +28,7 @@ function getDataFromDOM(url){
       for (let elem of elements) {
         content += `${elem.textContent}`;
       }
-      const result = content.split("●").filter(Boolean).map(item => `• <i>${item.trim()}</i>`).join('\n');
+      const result = content.split("•").filter(Boolean).map(item => `● <i>${item.trim()}</i>`).join('\n');
       return `<b>${header}</b>\n\n${result}`;
     })
 }
