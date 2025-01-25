@@ -20,6 +20,10 @@ async function checkMessageAndSendSticker(msg) {
 }
 
 function getUrlFromMessage(msg) {
+  if (typeof msg !== 'string') {
+    return null;
+  }
+
   const urlRegex = /(https?:\/\/)?([\w-]{1,32}\.[\w-]{1,32})[^\s@]*/gm;
   const found = msg.match(urlRegex);
   return found ? found[0] : null;
