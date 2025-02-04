@@ -1,6 +1,8 @@
 const { getImageFromAPI, getDataFromDOM } = require('../helpers/utils');
 const { getBcse, toTextOfValues } = require('../helpers/bcse');
 const { yapi } = require('../helpers/yapi');
+const { getWeatherNow, getWeatherToday } = require('../helpers/weather');
+const { scheduleDailyTask } = require('../helpers/timer');
 
 // Обработчик команды /start
 function handleStart(msg) {
@@ -26,7 +28,7 @@ function handleGif() {
 async function handlePhoto() {
   try {
     const imageUrl = await getImageFromAPI();
-    return { type: 'photo', value: imageUrl, caption: '', has_spoiler: true };
+    return { type: 'photo', value: imageUrl, caption: '', has_spoiler: false };
   } catch (error) {
     console.error('Ошибка получения изображения:', error);
     return `Произошла ошибка при получении изображения.\n${error.message.split('\n')[0]}`;
@@ -60,6 +62,22 @@ async function handleYapi(lastMsg) {
     })
 }
 
+async function handleTemp() {
+  return getWeatherNow();
+}
+
+async function handleInformer() {
+  
+  return scheduleDailyTask(async () => {
+    console.log("Функция таймера вызвана!");
+    const result = '';
+    result += await getWeatherToday();
+    result += '\n${await handleBcse()}';
+    return result;
+  });
+  
+}
+
 // Экспорт функций
 module.exports = {
   handleStart,
@@ -68,5 +86,7 @@ module.exports = {
   handleGif,
   handlePhoto,
   handleBcse,
-  handleYapi
+  handleYapi,
+  handleTemp,
+  handleInformer
 };

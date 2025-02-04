@@ -17,6 +17,13 @@ const lastMsg = {
   mesgId: ''
 };
 
+// try {
+//   handlers.handleInformer();
+// } catch(err) {
+//   console.error('Ошибка вызова информера!');
+// }
+
+
 // Меню команд
 const menuCommands = [
   {
@@ -31,6 +38,10 @@ const menuCommands = [
     command: "byn",
     description: "Проверяем курс $€₽"
   },
+  {
+    command: "temp",
+    description: "Погода за окном"
+  },
 ]
 
 bot.setMyCommands(menuCommands);
@@ -40,6 +51,7 @@ const commands = {
   '/img': handlers.handlePhoto,
   '/byn': handlers.handleBcse,
   '/300': (msg) => handlers.handleYapi(lastMsg),
+  '/temp': handlers.handleTemp,
 };
 
 // Функция для обработки команд
