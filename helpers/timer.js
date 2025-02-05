@@ -3,7 +3,7 @@ function scheduleDailyTask(taskFunction) {
     const now = new Date();
     const nextRun = new Date();
     
-    nextRun.setHours(22, 58, 0, 0); // Устанавливаем время на 9:00
+    nextRun.setHours(22, 11, 0, 0); // Устанавливаем время на 9:00
     
     if (now > nextRun) {
       nextRun.setDate(nextRun.getDate() + 1); // Если время уже прошло, назначаем на следующий день
@@ -22,7 +22,8 @@ function scheduleDailyTask(taskFunction) {
 
 // Пример использования
 scheduleDailyTask(() => {
-  console.log("Функция вызвана в 9:00!");
+  const now = new Date();
+  console.log(`Функция вызвана в ${now}`);
 });
 
 module.exports = { scheduleDailyTask }

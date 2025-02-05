@@ -66,14 +66,17 @@ async function handleTemp() {
   return getWeatherNow();
 }
 
-async function handleInformer() {
+async function handleInformer(botSendMessage) {
   
   return scheduleDailyTask(async () => {
     console.log("Функция таймера вызвана!");
-    const result = '';
-    result += await getWeatherToday();
-    result += '\n${await handleBcse()}';
-    return result;
+    const weather = await getWeatherToday();
+    const money = await handleBcse();
+    const pich = await getImageFromAPI();
+
+    // botSendMessage(value, caption)
+    botSendMessage(pich, `${weather}\n${money}\nХорошего дня! 😊`);
+
   });
   
 }

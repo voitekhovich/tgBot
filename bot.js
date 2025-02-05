@@ -9,6 +9,7 @@ process.env.NTBA_FIX_350 = true;  // Фикс, убирает уведомлен
 
 // Укажите токен вашего бота
 const token = process.env.TELEGRAM_TOKEN;
+const chatId = process.env.CHAT_ID;
 const bot = new TelegramBot(token, { polling: true, interval: 700 });
 
 // Последнее сообщение с url ссылкой
@@ -17,12 +18,12 @@ const lastMsg = {
   mesgId: ''
 };
 
-// try {
-//   handlers.handleInformer();
-// } catch(err) {
-//   console.error('Ошибка вызова информера!');
-// }
-
+try {
+  // handlers.handleInformer((data) => bot.sendMessage(chatId, data))
+  handlers.handleInformer((value, caption) => bot.sendPhoto(chatId, value, { disable_notification: false, caption: caption}))
+} catch(err) {
+  console.error('Ошибка вызова информера!');
+}
 
 // Меню команд
 const menuCommands = [
@@ -79,10 +80,14 @@ const handleCommand = async (command, msg) => {
 bot.onText(/\/\w+/, (msg, match) => {
   const command = match[0]; // Извлекаем команду из текста
   handleCommand(command, msg);
+  
+  
 });
 
 // Обработка всех остальных сообщений
 bot.on('message', async (msg) => {
+
+  // console.log(msg);
 
   patterns.checkMessageAndSendSticker(msg)
     .then(img => {
