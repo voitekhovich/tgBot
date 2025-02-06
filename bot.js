@@ -21,11 +21,14 @@ const lastMsg = {
   mesgId: ''
 };
 
+const messageBuf = [];
+
 try {
   // handlers.handleInformer((data) => bot.sendMessage(chatId, data))
-  handlers.handleInformer((value, caption) => bot.sendPhoto(chatId, value, { disable_notification: false, caption: caption}))
-} catch(err) {
-  console.error('Ошибка вызова информера!');
+  handlers.handleInformer((value, caption) => bot.sendPhoto(chatId, value, { disable_notification: false, caption: caption }))
+  handlers.handleAnalize((value) => bot.sendMessage(chatId, value, { disable_notification: false }), messageBuf)
+} catch (err) {
+  console.error('Ошибка вызова информера!' + err);
 }
 
 // Меню команд
@@ -84,13 +87,14 @@ const handleCommand = async (command, msg) => {
 bot.onText(/\/\w+/, (msg, match) => {
   const command = match[0]; // Извлекаем команду из текста
   handleCommand(command, msg);
-  
+
 });
 
 // Обработка всех остальных сообщений
 bot.on('message', async (msg) => {
 
   // console.log(msg);
+  getMessgages(msg)
 
   patterns.checkMessageAndSendSticker(msg)
     .then(img => {
@@ -114,3 +118,17 @@ bot.on('message', async (msg) => {
 bot.on('polling_error', (error) => {
   console.log(error);
 });
+
+function getMessgages(msg) {
+  try {
+    if (msg.from.is_bot === true) return
+    if (msg.text.startsWith("/")) return
+    // if (msg.chat.id !== chatId) return
+
+    const message = { username: msg.from.username, text: msg.text }
+    console.log(message);
+    messageBuf.push(message);
+  } catch (err) {
+    console.log(err);
+  }
+}

@@ -5,6 +5,8 @@ const { getWeatherNow, getWeatherToday } = require('../helpers/weather');
 const { scheduleDailyTask } = require('../helpers/timer');
 const { getAI } = require('../helpers/gemini');
 
+const zapros = process.env.ZAPROS;
+
 // Обработчик команды /start
 function handleStart(msg) {
   return `Привет, ${msg.from.first_name}! Я твой бот!`;
@@ -49,10 +51,10 @@ async function handleBcse() {
 async function handleYapi(lastMsg) {
   if (lastMsg.url === '') return 'Отправьте ссылку на статью в чат и повтори запрос';
   return yapi(lastMsg.url)
-  // return yapi('https://habr.com/ru/news/729422/')
+    // return yapi('https://habr.com/ru/news/729422/')
     .then(json => getDataFromDOM(json.sharing_url))
     .then((data) => {
-      const result = {type: 'html', data, mesgId: lastMsg.mesgId}
+      const result = { type: 'html', data, mesgId: lastMsg.mesgId }
       lastMsg.mesgId = '';
       lastMsg.url = '';
       return result;
@@ -68,7 +70,7 @@ async function handleTemp() {
 }
 
 async function handleInformer(botSendMessage) {
-  
+
   return scheduleDailyTask(async () => {
     console.log("Функция таймера вызвана!");
     const weather = await getWeatherToday();
@@ -79,7 +81,25 @@ async function handleInformer(botSendMessage) {
     botSendMessage(pich, `${weather}\n${money}\nХорошего дня! 😊`);
 
   });
-  
+
+}
+
+async function handleAnalize(botSendMessage, messages) {
+
+  return scheduleDailyTask(async () => {
+    
+    console.log("Функция таймера вызвана!");
+    if (messages.length < 5) return
+
+    const last50 = messages.slice(-50);
+    const request = `${zapros}: ${last50.map(obj => JSON.stringify(obj)).join(", ")}`;
+    console.log(request);
+    getAI(request)
+      .then(data => botSendMessage(data))
+      .catch(err => console.log(err)
+      )
+  });
+
 }
 
 async function handleAi(prompt) {
@@ -98,5 +118,6 @@ module.exports = {
   handleYapi,
   handleTemp,
   handleInformer,
+  handleAnalize,
   handleAi
 };
