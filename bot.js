@@ -5,6 +5,9 @@ const TelegramBot = require('node-telegram-bot-api');
 const handlers = require('./commands/handlers'); // Импорт функций для команд
 const patterns = require('./commands/patterns');
 
+// const gemini = require('./helpers/gemini');
+// gemini.getAI();
+
 process.env.NTBA_FIX_350 = true;  // Фикс, убирает уведомление о неподдерживаемой функции отправки файлов
 
 // Укажите токен вашего бота
