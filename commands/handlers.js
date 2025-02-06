@@ -3,6 +3,7 @@ const { getBcse, toTextOfValues } = require('../helpers/bcse');
 const { yapi } = require('../helpers/yapi');
 const { getWeatherNow, getWeatherToday } = require('../helpers/weather');
 const { scheduleDailyTask } = require('../helpers/timer');
+const { getAI } = require('../helpers/gemini');
 
 // Обработчик команды /start
 function handleStart(msg) {
@@ -81,6 +82,11 @@ async function handleInformer(botSendMessage) {
   
 }
 
+async function handleAi(prompt) {
+  const request = prompt.replace(/^\/ai\s+/, "");
+  return await getAI(request);
+}
+
 // Экспорт функций
 module.exports = {
   handleStart,
@@ -91,5 +97,6 @@ module.exports = {
   handleBcse,
   handleYapi,
   handleTemp,
-  handleInformer
+  handleInformer,
+  handleAi
 };

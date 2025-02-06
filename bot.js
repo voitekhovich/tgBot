@@ -56,6 +56,7 @@ const commands = {
   '/byn': handlers.handleBcse,
   '/300': (msg) => handlers.handleYapi(lastMsg),
   '/temp': handlers.handleTemp,
+  '/ai': (msg) => handlers.handleAi(msg.text),
 };
 
 // Функция для обработки команд
@@ -83,7 +84,6 @@ const handleCommand = async (command, msg) => {
 bot.onText(/\/\w+/, (msg, match) => {
   const command = match[0]; // Извлекаем команду из текста
   handleCommand(command, msg);
-  
   
 });
 
