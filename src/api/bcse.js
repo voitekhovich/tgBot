@@ -1,12 +1,14 @@
-const jsdom = require("jsdom");
-const moment = require("moment");
+import jsdom from "jsdom"
+import moment from "moment";
+
+import logger from "../utils/logger.js";
 
 const BCSE_SRC = "https://www.bcse.by/";
 
 const { JSDOM } = jsdom;
 
-const getBcse = () => {
-  
+export const getBcse = () => {
+  logger.info("Получаем курс валют");
   const parse = (elem) => {
     const element = elem.firstElementChild;
     const asfalt = element.getElementsByClassName("text-asfalt");
@@ -32,7 +34,7 @@ const getBcse = () => {
       return arrs;      
     })
     .catch((err) => {
-      console.log(err);
+      logger.error(err);
     });
 };
 
@@ -51,15 +53,16 @@ const currencySymbols = {
 
 const getText = (obj) => {
   const symbol = currencySymbols[obj.name] || obj.name;
-  return `${symbol} ${obj.value} ${obj.inf > 0 ? "↑" : "↓"}`;
+  return `${symbol} ${obj.value}`;
+  // return `${symbol} ${obj.value} ${obj.inf > 0 ? "↑" : "↓"}`;
 };
 
-const toText = (dataArray) => {
+export const toText = (dataArray) => {
   const result = dataArray.map((element) => getText(element));
   return result.join(" ");
 };
 
-const toTextOfValues = (dataArray, values = [], time = false) => {
+export const toTextOfValues = (dataArray, values = [], time = false) => {
   if (!values) return toText(dataArray);
 
   const result = [];
@@ -68,9 +71,8 @@ const toTextOfValues = (dataArray, values = [], time = false) => {
     try {
       const data = dataArray.find((item) => item.name === inf);
       result.push(getText(data));
-    } catch (error) {
-      console.log("error");
-      // continue
+    } catch (err) {
+      logger.error(err);
     }
   }
 
@@ -80,5 +82,3 @@ const toTextOfValues = (dataArray, values = [], time = false) => {
 
   return result.join(" ");
 };
-
-module.exports = { getBcse, toText, toTextOfValues };

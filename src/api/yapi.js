@@ -1,7 +1,7 @@
 const YA_300_API = 'https://300.ya.ru/api/sharing-url';
 const token = process.env.YA_300_TOKEN
 
-exports.yapi = (article_url) => {
+export const yapi = (article_url) => {
   return fetch(YA_300_API, {
     method: 'POST',
     headers: {

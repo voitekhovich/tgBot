@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const apiKey = process.env.GEMINIAPI
 const proxy = process.env.PROXY
@@ -16,10 +16,8 @@ globalThis.fetch = (url, options) => {
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-async function getAI(prompt) {
+export async function getAI(prompt) {
   return model.generateContent(prompt)
     .then(result => result.response.text())
     .catch(error => `${error.message.split('\n')[0]}`)
 }
-
-module.exports = { getAI };

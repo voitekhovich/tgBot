@@ -1,34 +1,36 @@
-const { getImageFromAPI, getDataFromDOM } = require('../helpers/utils');
-const { getBcse, toTextOfValues } = require('../helpers/bcse');
-const { yapi } = require('../helpers/yapi');
-const { getWeatherNow, getWeatherToday } = require('../helpers/weather');
-const { scheduleDailyTask } = require('../helpers/timer');
-const { getAI } = require('../helpers/gemini');
+import logger from "../utils/logger.js";
+import { getImageFromAPI, getDataFromDOM } from "../api/utils.js";
+import { getBcse, toTextOfValues } from "../api/bcse.js";
+import { yapi } from "../api/yapi.js";
+import { getWeatherNow, getWeatherToday } from "../api/weather.js";
+import { scheduleDailyTask } from "../utils/timer.js";
+import { getAI } from "../api/gemini.js";
 
 const zapros = process.env.ZAPROS;
 
 // Обработчик команды /start
-function handleStart(msg) {
+export function handleStart(msg) {
   return `Привет, ${msg.from.first_name}! Я твой бот!`;
 }
 
 // Обработчик команды /text
-function handleText(msg) {
+export function handleText(msg) {
   return getUrlFromMessage(msg);
 }
 
 // Обработчик команды /sticker
-function handleSticker(img) {
+export function handleSticker(img) {
   return { type: 'sticker', value: img };
 }
 
 // Обработчик команды /gif
-function handleGif() {
+export function handleGif() {
   return { type: 'animation', value: 'https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif' };
 }
 
 // Обработчик команды /photo
-async function handlePhoto() {
+export async function handlePhoto() {
+  logger.info("Start handlePhoto");
   try {
     const imageUrl = await getImageFromAPI();
     return { type: 'photo', value: imageUrl, caption: '', has_spoiler: false };
@@ -38,7 +40,8 @@ async function handlePhoto() {
   }
 }
 
-async function handleBcse() {
+export async function handleBcse() {
+  logger.info("Start handleBcse");
   try {
     const data = await getBcse();
     return toTextOfValues(data, ['USD', 'EUR', 'RUB'], false)
@@ -48,7 +51,8 @@ async function handleBcse() {
   }
 }
 
-async function handleYapi(lastMsg) {
+export async function handleYapi(lastMsg) {
+  logger.info("Start handleYapi");
   if (lastMsg.url === '') return 'Отправьте ссылку на статью в чат и повтори запрос';
   return yapi(lastMsg.url)
     // return yapi('https://habr.com/ru/news/729422/')
@@ -65,12 +69,12 @@ async function handleYapi(lastMsg) {
     })
 }
 
-async function handleTemp() {
+export async function handleTemp() {
   return getWeatherNow();
 }
 
-async function handleInformer(botSendMessage) {
-
+export async function handleInformer(botSendMessage) {
+  logger.info("Start handleInformer");
   return scheduleDailyTask(async () => {
     console.log("Функция таймера вызвана!");
     const weather = await getWeatherToday();
@@ -84,40 +88,28 @@ async function handleInformer(botSendMessage) {
 
 }
 
-async function handleAnalize(botSendMessage, messages) {
-
+export async function handleAnalize(botSendMessage, messages) {
+  logger.info("Start handleAnalize");
   return scheduleDailyTask(async () => {
-    
-    console.log("Функция таймера вызвана!");
-    if (messages.length < 5) return
 
-    const last50 = messages.slice(-50);
+    console.log("Функция таймера вызвана!");
+    if (messages.length < 10) return
+
+    const last50 = messages.slice(-70);
     const request = `${zapros}: ${last50.map(obj => JSON.stringify(obj)).join(", ")}`;
     console.log(request);
     getAI(request)
-      .then(data => botSendMessage(data))
+      .then(data => {
+        botSendMessage(data);
+        messages = [];
+      })
       .catch(err => console.log(err)
       )
   });
 
 }
 
-async function handleAi(prompt) {
+export async function handleAi(prompt) {
   const request = prompt.replace(/^\/ai\s+/, "");
   return await getAI(request);
 }
-
-// Экспорт функций
-module.exports = {
-  handleStart,
-  handleText,
-  handleSticker,
-  handleGif,
-  handlePhoto,
-  handleBcse,
-  handleYapi,
-  handleTemp,
-  handleInformer,
-  handleAnalize,
-  handleAi
-};

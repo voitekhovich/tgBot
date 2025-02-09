@@ -1,10 +1,13 @@
+import logger from "../utils/logger.js";
+
 const apiKey = process.env.WEATHERAPI
 
 const city = "Minsk";
 const urlNow = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}&aqi=no&lang=ru`;
 const urlToday = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${city}&aqi=no&lang=ru`;
 
-function getWeatherNow() {
+export function getWeatherNow() {
+  logger.info('Получаем погоду на сейчас');
   return fetch(urlNow)
     .then(response => response.json())
     .then(data => {
@@ -13,10 +16,11 @@ function getWeatherNow() {
       // console.log(`Ветер: ${data.current.wind_kph} км/ч`);
       return `Температура в Минске: ${data.current.temp_c}°C,\n${data.current.condition.text},\nветер ${data.current.wind_kph} км/ч`;
     })
-    .catch(error => console.error("Ошибка получения данных:", error));
+    .catch(error => logger.error(`Ошибка получения погоды:" ${error}`));
 } 
 
-function getWeatherToday() {
+export function getWeatherToday() {
+  logger.info('Получаем погоду на сегодня');
   return fetch(urlToday)
   .then(response => response.json())
   .then(data => {
@@ -30,7 +34,5 @@ function getWeatherToday() {
     // console.log(`Ветер: ${forecast.day.maxwind_kph} км/ч`);
     return `Сегодня ${forecast.day.mintemp_c}...${forecast.day.maxtemp_c}°, ${forecast.day.condition.text}`;
   })
-  .catch(error => console.error("Ошибка получения данных:", error));
-} 
-
-module.exports = { getWeatherNow, getWeatherToday };
+  .catch(error => logger.error(`Ошибка получения данных:" ${error}`));
+}

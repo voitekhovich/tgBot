@@ -1,19 +1,25 @@
-require('dotenv').config(); // Подключение dotenv для загрузки переменных окружения
-const fs = require("fs");
-const TelegramBot = require('node-telegram-bot-api');
-
-const handlers = require('./commands/handlers'); // Импорт функций для команд
-const patterns = require('./commands/patterns');
-
-// const gemini = require('./helpers/gemini');
-// gemini.getAI();
-
 process.env.NTBA_FIX_350 = true;  // Фикс, убирает уведомление о неподдерживаемой функции отправки файлов
 
-// Укажите токен вашего бота
+import 'dotenv/config';
+
+import fs from "fs";
+import TelegramBot from "node-telegram-bot-api";
+
+import logger from "./utils/logger.js";
+import { menuCommands } from "./config/commands.js";
+import { getMessages } from "./utils/functions.js";
+import * as handlers from "./commands/handlers.js";
+import * as patterns from "./commands/patterns.js";
+
+logger.info("Сервер запущен")
+
 const token = process.env.TELEGRAM_TOKEN;
-const chatId = process.env.CHAT_ID;
 const bot = new TelegramBot(token, { polling: true, interval: 700 });
+bot.setMyCommands(menuCommands);
+
+const chatId = process.env.CHAT_ID;
+
+logger.info("Бот запущен");
 
 // Последнее сообщение с url ссылкой
 const lastMsg = {
@@ -24,34 +30,11 @@ const lastMsg = {
 const messageBuf = [];
 
 try {
-  // handlers.handleInformer((data) => bot.sendMessage(chatId, data))
   handlers.handleInformer((value, caption) => bot.sendPhoto(chatId, value, { disable_notification: false, caption: caption }))
   handlers.handleAnalize((value) => bot.sendMessage(chatId, value, { disable_notification: false }), messageBuf)
-} catch (err) {
-  console.error('Ошибка вызова информера!' + err);
+} catch (error) {
+  logger.error(`Ошибка вызова информера! ${error}`);
 }
-
-// Меню команд
-const menuCommands = [
-  {
-    command: "img",
-    description: "Мне повезёт!"
-  },
-  {
-    command: "300",
-    description: "Пересказ статьи по ссылке"
-  },
-  {
-    command: "byn",
-    description: "Проверяем курс $€₽"
-  },
-  {
-    command: "temp",
-    description: "Погода за окном"
-  },
-]
-
-bot.setMyCommands(menuCommands);
 
 // Маппинг команд: команда => обработчик
 const commands = {
@@ -66,9 +49,7 @@ const commands = {
 const handleCommand = async (command, msg) => {
   const handler = commands[command];
   if (!handler) return;
-
   const result = await handler(msg);
-
   // Маппинг действий по типу
   const actions = {
     sticker: () => bot.sendSticker(msg.chat.id, result.value),
@@ -77,25 +58,19 @@ const handleCommand = async (command, msg) => {
     html: () => bot.sendMessage(msg.chat.id, result.data, { parse_mode: "HTML", reply_to_message_id: result.msgId }),
     default: () => bot.sendMessage(msg.chat.id, result || 'Команда обработана.'),
   };
-
   // Выполнение действия на основе типа или действия по умолчанию
   (actions[result?.type] || actions.default)();
 };
-
 
 // Обработчик всех команд
 bot.onText(/\/\w+/, (msg, match) => {
   const command = match[0]; // Извлекаем команду из текста
   handleCommand(command, msg);
-
 });
 
 // Обработка всех остальных сообщений
 bot.on('message', async (msg) => {
-
-  // console.log(msg);
-  getMessgages(msg)
-
+  getMessages(msg, messageBuf)
   patterns.checkMessageAndSendSticker(msg)
     .then(img => {
       if (!img) return;
@@ -103,32 +78,20 @@ bot.on('message', async (msg) => {
       bot.sendSticker(msg.chat.id, imgStream, {
         reply_to_message_id: msg.message_id
       })
-        .catch(err => console.log(err))
+        .catch(err => logger.error(`${err}`))
     })
-
   const url = await patterns.getUrlFromMessage(msg.text);
   if (url != null) {
     lastMsg.mesgId = msg.message_id;
     lastMsg.url = url;
   }
-
 });
 
-// Обработка ошибок поллинга
-bot.on('polling_error', (error) => {
-  console.log(error);
-});
+bot.on('polling_error', (err) => {
+  logger.error(`Ошибка поллинга: ${err}`);
 
-function getMessgages(msg) {
-  try {
-    if (msg.from.is_bot === true) return
-    if (msg.text.startsWith("/")) return
-    // if (msg.chat.id !== chatId) return
-
-    const message = { username: msg.from.username, text: msg.text }
-    console.log(message);
-    messageBuf.push(message);
-  } catch (err) {
-    console.log(err);
+  if (err.code === 'EFATAL') {
+    logger.error("Критическая ошибка! Перезапускаем бота...");
+    process.exit(1);
   }
-}
+});
