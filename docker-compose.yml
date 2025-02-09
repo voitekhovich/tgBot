@@ -2,10 +2,11 @@ services:
   app:
     build: .
     container_name: tgBot
-    command: ["node", "bot.js"]
+    command: ["npm", "start"]
     restart: unless-stopped
     env_file:
       - .env
     volumes:
       - /etc/timezone:/etc/timezone:ro
       - /etc/localtime:/etc/localtime:ro
+      - ./logs:/app/logs
