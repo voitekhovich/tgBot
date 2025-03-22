@@ -29,12 +29,13 @@ const lastMsg = {
 
 const messageBuf = [];
 
-try {
-  handlers.handleInformer((value, caption) => bot.sendPhoto(chatId, value, { disable_notification: false, caption: caption }))
-  handlers.handleAnalize((value) => bot.sendMessage(chatId, value, { disable_notification: false }), messageBuf)
-} catch (error) {
-  logger.error(`Ошибка вызова информера! ${error}`);
-}
+// ОТКЛЮЧИЛ АВТОИНФОРМЕРЫ
+// try {
+//   handlers.handleInformer((value, caption) => bot.sendPhoto(chatId, value, { disable_notification: false, caption: caption }))
+//   handlers.handleAnalize((value) => bot.sendMessage(chatId, value, { disable_notification: false }), messageBuf)
+// } catch (error) {
+//   logger.error(`Ошибка вызова информера! ${error}`);
+// }
 
 // Маппинг команд: команда => обработчик
 const commands = {

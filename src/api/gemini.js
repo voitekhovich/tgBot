@@ -14,10 +14,34 @@ globalThis.fetch = (url, options) => {
 };
 
 const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.0-flash",
+  systemInstruction: "Ты добрый ассистен, твоё имя Моника, к тебе обращаются за помощью. Отвечай на поставленные вопросы по делу, коротко, можешь пошутить если это уместно",
+});
+
+// export async function getAI(prompt) {
+//   return model.generateContent(prompt)
+//     .then(result => result.response.text())
+//     .catch(error => `${error.message.split('\n')[0]}`)
+// }
 
 export async function getAI(prompt) {
-  return model.generateContent(prompt)
+  return model.generateContent({
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: prompt,
+          }
+        ],
+      }
+    ],
+    generationConfig: {
+      maxOutputTokens: 1000,
+      temperature: 0.3,
+    }
+  })
     .then(result => result.response.text())
     .catch(error => `${error.message.split('\n')[0]}`)
 }
