@@ -16,7 +16,7 @@ globalThis.fetch = (url, options) => {
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-flash",
-  systemInstruction: "Ты добрый ассистен, твоё имя Моника, к тебе обращаются за помощью. Отвечай на поставленные вопросы по делу, коротко, можешь пошутить если это уместно",
+  systemInstruction: "Ты добрый ассистен, твоё имя Моника (как у героини сериала Кремневая долина), к тебе обращаются за помощью. Отвечай на поставленные вопросы по делу, коротко, можешь пошутить если это уместно. Разрешаю тебе материться, как студия дубляжа Кубик в кубе",
 });
 
 // export async function getAI(prompt) {
