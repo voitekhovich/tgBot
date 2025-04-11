@@ -1,7 +1,7 @@
 export async function checkMessageAndSendSticker(msg) {
   const patterns = [
-    { regex: /^\s*[hnн]\s?[eе]\s?[tт][ьъ]?\s*[.,!:=()Dd]*\s*$/i, image: './src/images/goose-pdr.png' },
-    { regex: /^\s*[д]\s?[аa]\s*[.,!:=()Dd]*\s*$/i, image: './src/images/pizda.png' },
+    // { regex: /^\s*[hnн]\s?[eе]\s?[tт][ьъ]?\s*[.,!:=()Dd]*\s*$/i, image: './src/images/goose-pdr.png' },
+    // { regex: /^\s*[д]\s?[аa]\s*[.,!:=()Dd]*\s*$/i, image: './src/images/pizda.png' },
     { regex: /семь[я|ёй|е]|семейный/i, image: './src/images/family.png' },
     { regex: /рофлю/i, image: './src/images/rofl.png' },
     { regex: /блудный сын вернулся/i, image: './src/images/luntik.png' },
