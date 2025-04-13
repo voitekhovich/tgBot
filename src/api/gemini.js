@@ -19,29 +19,40 @@ const model = genAI.getGenerativeModel({
   systemInstruction: "Ты добрый ассистен и разбираешься в информационных технологиях, к тебе обращаются за помощью. Отвечай на поставленные вопросы по делу, коротко, можешь пошутить если это уместно. Разрешаю тебе материться, но не часто",
 });
 
-// export async function getAI(prompt) {
-//   return model.generateContent(prompt)
-//     .then(result => result.response.text())
-//     .catch(error => `${error.message.split('\n')[0]}`)
-// }
+export async function getAI(prompt, history) {
 
-export async function getAI(prompt) {
-  return model.generateContent({
-    contents: [
-      {
-        role: 'user',
-        parts: [
-          {
-            text: prompt,
-          }
-        ],
-      }
-    ],
+  const chat = model.startChat({
+    history,
     generationConfig: {
       maxOutputTokens: 1000,
       temperature: 0.3,
-    }
-  })
+    },
+  });
+
+  return chat.sendMessage(prompt)
     .then(result => result.response.text())
-    .catch(error => `${error.message.split('\n')[0]}`)
+    .catch(error => `${error.message.split('\n')[0]}`);
+
 }
+
+// ДЛЯ ОДНОРАЗОВЫХ СООБЩЕНИЙ
+// export async function getAI(prompt) {
+//   return model.generateContent({
+//     contents: [
+//       {
+//         role: 'user',
+//         parts: [
+//           {
+//             text: prompt,
+//           }
+//         ],
+//       }
+//     ],
+//     generationConfig: {
+//       maxOutputTokens: 1000,
+//       temperature: 0.3,
+//     }
+//   })
+//     .then(result => result.response.text())
+//     .catch(error => `${error.message.split('\n')[0]}`)
+// }

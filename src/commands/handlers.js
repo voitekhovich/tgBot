@@ -5,6 +5,7 @@ import { yapi } from "../api/yapi.js";
 import { getWeatherNow, getWeatherToday } from "../api/weather.js";
 import { scheduleDailyTask } from "../utils/timer.js";
 import { getAI } from "../api/gemini.js";
+import { addMessage, getMemory, logMemory, resetMemory } from '../utils/memory.js';
 
 const zapros = process.env.ZAPROS;
 
@@ -109,7 +110,24 @@ export async function handleAnalize(botSendMessage, messages) {
 
 }
 
-export async function handleAi(prompt) {
-  const request = prompt.replace(/^\/ai\s+/, "");
-  return await getAI(request);
+export async function handleAi(msg) {
+  
+  const prompt = msg.text.replace(/^\/ai\s+/, "");
+  const chatId = msg.chat.id;
+
+  addMessage(chatId, 'user', prompt);
+
+  const context = getMemory(chatId);
+  const response = await getAI(prompt, context);
+
+  addMessage(chatId, 'model', response);
+  logMemory(chatId);
+  return response;
+
+}
+
+export function handleReset(msg) {
+  const chatId = msg.chat.id;
+  resetMemory(chatId);
+  return '🧹 Память очищена. Начнём с чистого листа!';
 }

@@ -1,8 +1,12 @@
 // Меню команд
 export const menuCommands = [
   {
+    command: "ai",
+    description: "Gemini [/ai ] [/reset ]"
+  },
+  {
     command: "img",
-    description: "Мне повезёт!"
+    description: "Осторожно, возможно сиськи!"
   },
   {
     command: "300",
@@ -10,10 +14,10 @@ export const menuCommands = [
   },
   {
     command: "byn",
-    description: "Проверяем курс $€₽"
+    description: "BCSE Курсы валют $€₽"
   },
   {
     command: "temp",
-    description: "Погода за окном"
+    description: "Погода в Минске"
   },
 ]

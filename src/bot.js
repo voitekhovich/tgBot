@@ -43,7 +43,8 @@ const commands = {
   '/byn': handlers.handleBcse,
   '/300': (msg) => handlers.handleYapi(lastMsg),
   '/temp': handlers.handleTemp,
-  '/ai': (msg) => handlers.handleAi(msg.text),
+  '/ai': (msg) => handlers.handleAi(msg),
+  '/reset': (msg) => handlers.handleReset(msg),
 };
 
 // Функция для обработки команд
