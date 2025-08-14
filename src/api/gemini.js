@@ -1,6 +1,6 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
-const apiKey = process.env.GEMINIAPI
+// const apiKey = process.env.GEMINIAPI
 const proxy = process.env.PROXY
 
 // Подменяем fetch для перехвата запросов и проксирования через Cloudflare Workers
@@ -13,46 +13,22 @@ globalThis.fetch = (url, options) => {
   return originalFetch(url, options);
 };
 
-const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash",
-  systemInstruction: "Ты добрый ассистен и разбираешься в информационных технологиях, к тебе обращаются за помощью. Отвечай на поставленные вопросы по делу, коротко, можешь пошутить если это уместно. Разрешаю тебе материться, но не часто",
-});
+// The client gets the API key from the environment variable `GEMINI_API_KEY`.
+const ai = new GoogleGenAI({});
 
 export async function getAI(prompt, history) {
 
-  const chat = model.startChat({
-    history,
-    generationConfig: {
+  const chat = ai.chats.create({
+    model: "gemini-2.5-flash",
+    config: {
+      temperature: 0.4,
       maxOutputTokens: 1000,
-      temperature: 0.3,
+      tools: [{urlContext: {}}, {googleSearch: {}}, {codeExecution:{}}],
     },
+    history,
   });
 
-  return chat.sendMessage(prompt)
-    .then(result => result.response.text())
+  return chat.sendMessage({message: prompt})
+    .then(result => result.text)
     .catch(error => `${error.message.split('\n')[0]}`);
-
 }
-
-// ДЛЯ ОДНОРАЗОВЫХ СООБЩЕНИЙ
-// export async function getAI(prompt) {
-//   return model.generateContent({
-//     contents: [
-//       {
-//         role: 'user',
-//         parts: [
-//           {
-//             text: prompt,
-//           }
-//         ],
-//       }
-//     ],
-//     generationConfig: {
-//       maxOutputTokens: 1000,
-//       temperature: 0.3,
-//     }
-//   })
-//     .then(result => result.response.text())
-//     .catch(error => `${error.message.split('\n')[0]}`)
-// }

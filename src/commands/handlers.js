@@ -112,7 +112,11 @@ export async function handleAnalize(botSendMessage, messages) {
 
 export async function handleAi(msg) {
   
-  const prompt = msg.text.replace(/^\/ai\s+/, "");
+  let prompt = msg.text === "/ai" ? "Привет" : msg.text.replace(/^\/ai\s+/, "").trim();
+  if (!prompt) {
+    prompt = "Привет";
+  }
+  
   const chatId = msg.chat.id;
 
   addMessage(chatId, 'user', prompt);
