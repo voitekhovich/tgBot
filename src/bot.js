@@ -65,7 +65,7 @@ const handleCommand = async (command, msg) => {
 };
 
 // Обработчик всех команд
-bot.onText(/\/\w+/, (msg, match) => {
+bot.onText(/^\/\w+/, (msg, match) => {
   const command = match[0]; // Извлекаем команду из текста
   handleCommand(command, msg);
 });
