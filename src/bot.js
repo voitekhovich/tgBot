@@ -89,6 +89,47 @@ bot.on('message', async (msg) => {
   }
 });
 
+
+bot.on('photo', async (img) => {
+  if (img?.caption && img.caption.trim().startsWith("/ai")) {
+    try {
+      // Получаем информацию о фото
+      const photo = img.photo[img.photo.length - 1];
+      const fileId = photo.file_id;
+
+      const file = await bot.getFile(fileId);
+      const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
+
+      const extension = file.file_path.split(".").pop(); // jpg, png, webp...
+      const mimeType = {
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        webp: "image/webp",
+      }[extension] || "application/octet-stream";
+
+        // Качаем через fetch
+      const res = await fetch(fileUrl);
+      if (!res.ok) throw new Error(`Ошибка загрузки: ${res.status}`);
+      
+      // В Buffer
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64Img = buffer.toString("base64");
+
+      const result = await handlers.handleAiImg(img, base64Img, mimeType);
+      bot.sendMessage(img.chat.id, result || 'Команда обработана.')
+        
+    } catch (error) {
+      logger.error('Ошибка при обработке фото:', error);
+    }
+  }
+
+  
+
+});
+
+
 bot.on('polling_error', (err) => {
   logger.error(`Ошибка поллинга: ${err}`);
 

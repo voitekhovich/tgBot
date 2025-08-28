@@ -4,7 +4,7 @@ import { getBcse, toTextOfValues } from "../api/bcse.js";
 import { yapi } from "../api/yapi.js";
 import { getWeatherNow, getWeatherToday } from "../api/weather.js";
 import { scheduleDailyTask } from "../utils/timer.js";
-import { getAI } from "../api/gemini.js";
+import { getAI, getAiImg } from "../api/gemini.js";
 import { addMessage, getMemory, logMemory, resetMemory } from '../utils/memory.js';
 
 const zapros = process.env.ZAPROS;
@@ -111,21 +111,33 @@ export async function handleAnalize(botSendMessage, messages) {
 }
 
 export async function handleAi(msg) {
+    
+    let prompt = msg.text === "/ai" ? "Привет" : msg.text.replace(/^\/ai\s+/, "").trim();
+    if (!prompt) {
+      prompt = "Привет";
+    }
+
+    const chatId = msg.chat.id;
+
+    addMessage(chatId, 'user', prompt);
+
+    const context = getMemory(chatId);
+    const response = await getAI(prompt, context);
+
+    addMessage(chatId, 'model', response);
+    logMemory(chatId);
+    return response;
+
+}
+
+export async function handleAiImg(msg, img, imgType) {
   
-  let prompt = msg.text === "/ai" ? "Привет" : msg.text.replace(/^\/ai\s+/, "").trim();
+  const txt = "Переведи весь текст на изображении на русский язык (если он есть). Затем дай краткое описание или характеристику изображения. Отвечай коротко.";
+  let prompt = msg.caption === "/ai" ? txt : msg.caption.replace(/^\/ai\s+/, "").trim();
   if (!prompt) {
-    prompt = "Привет";
+    prompt = txt
   }
-  
-  const chatId = msg.chat.id;
-
-  addMessage(chatId, 'user', prompt);
-
-  const context = getMemory(chatId);
-  const response = await getAI(prompt, context);
-
-  addMessage(chatId, 'model', response);
-  logMemory(chatId);
+  const response = await getAiImg(prompt, img, imgType);
   return response;
 
 }
