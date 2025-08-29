@@ -111,26 +111,6 @@ export async function handleAnalize(botSendMessage, messages) {
 
 }
 
-export async function handleAi(msg) {
-
-  let prompt = msg.text === "/ai" ? "Привет" : msg.text.replace(/^\/ai\s+/, "").trim();
-  if (!prompt) {
-    prompt = "Привет";
-  }
-
-  const chatId = msg.chat.id;
-
-  addMessage(chatId, 'user', prompt);
-
-  const context = getMemory(chatId);
-  const response = await getAI(prompt, context);
-
-  addMessage(chatId, 'model', response);
-  logMemory(chatId);
-  return response;
-
-}
-
 async function handleVoice(bot, promt, voice) {
   try {
     const fileId = voice.file_id;
@@ -148,10 +128,13 @@ async function handleVoice(bot, promt, voice) {
     const buffer = Buffer.from(arrayBuffer);
     const base64Audio = buffer.toString("base64");
 
+    console.log('base64Audio length:', base64Audio.length);
+    
     return await getAiVoice(promt, base64Audio, mimeType);
 
   } catch (error) {
     logger.error('Ошибка при обработке голосового сообщения:', error);
+    return 'Произошла ошибка при обработке аудио';
   }
 
 }
@@ -159,14 +142,15 @@ async function handleVoice(bot, promt, voice) {
 export async function handleAiNew(bot, msg) {
 
   let promt = msg.text.slice(3).trim();
+  const chatId = msg.chat.id;
 
   if (!msg.reply_to_message) {
-    
+
+    console.log('default ai model');    
+
     if (!promt) {
       promt = "Привет";
     }
-
-    const chatId = msg.chat.id;
 
     addMessage(chatId, 'user', promt);
 
@@ -176,12 +160,29 @@ export async function handleAiNew(bot, msg) {
     addMessage(chatId, 'model', response);
     logMemory(chatId);
     return response;
-  }
 
-  const reply = msg.reply_to_message;
+  } else {  
 
-  if (reply.voice) {
-    return handleVoice(bot, promt, reply.voice);
+    const reply = msg.reply_to_message;
+
+    if (reply.voice) {
+      
+      console.log('audio ai model');
+
+      if (!promt) {
+        addMessage(chatId, 'user', 'Сделай транскрибацию');
+      } else {
+        addMessage(chatId, 'user', promt);
+      }
+
+      console.log(reply.voice);
+      
+      const response = await handleVoice(bot, promt, reply.voice);
+      addMessage(chatId, 'model', response);
+      logMemory(chatId);
+      return response;
+    }
+
   }
 
 }
@@ -189,25 +190,16 @@ export async function handleAiNew(bot, msg) {
 export async function handleAiImg(msg, img, imgType) {
 
   const txt = "Дай краткое описание изображения";
-  let prompt = msg.caption === "/ai" ? txt : msg.caption.replace(/^\/ai\s+/, "").trim();
-  if (!prompt) {
-    prompt = txt
+  let promt = msg.caption === "/ai" ? txt : msg.caption.replace(/^\/ai\s+/, "").trim();
+  if (!promt) {
+    promt = txt
   }
-  const response = await getAiImg(prompt, img, imgType);
+
+  addMessage(chatId, 'user', promt);
+  const response = await getAiImg(promt, img, imgType);
+  addMessage(chatId, 'model', response);
+
   return response;
-
-}
-
-export async function handleAiVoice(msg, voice, imgType) {
-
-  const txt = "Сделай траскрибацию этого аудио";
-  let prompt = msg.caption === "/ai" ? txt : msg.caption.replace(/^\/ai\s+/, "").trim();
-  if (!prompt) {
-    prompt = txt
-  }
-  const response = await getAiVoice(prompt, voice, imgType);
-  return response;
-
 }
 
 export function handleReset(msg) {
