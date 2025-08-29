@@ -72,7 +72,9 @@ export async function getAiImg(prompt, base64ImageFile, mimeType) {
     .catch(error => `${error.message.split('\n')[0]}`);
 }
 
-export async function getAiVoice(prompt, base64AudioFile, mimeType) {
+export async function getAiVoice(promt, base64AudioFile, mimeType) {
+
+  const safePrompt = promt && promt.trim() ? promt : "Сделай транскрибацию";
 
   const contents = [
     {
@@ -81,7 +83,7 @@ export async function getAiVoice(prompt, base64AudioFile, mimeType) {
         data: base64AudioFile,
       },
     },
-    { text: prompt },
+    { text: safePrompt },
   ];
 
   const response = await ai.models.generateContent({
@@ -93,6 +95,9 @@ export async function getAiVoice(prompt, base64AudioFile, mimeType) {
     },
     contents: contents,
   });
+
+  console.log("getAiVoice: " + response.text );
+  
 
   return response.text;
 

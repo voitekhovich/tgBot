@@ -43,7 +43,8 @@ const commands = {
   '/byn': handlers.handleBcse,
   '/300': (msg) => handlers.handleYapi(lastMsg),
   '/temp': handlers.handleTemp,
-  '/ai': (msg) => handlers.handleAi(msg),
+  // '/ai': (msg) => handlers.handleAiNew(msg),
+  '/ai': (msg) => handlers.handleAiNew(bot, msg),
   '/reset': (msg) => handlers.handleReset(msg),
 };
 
@@ -69,6 +70,12 @@ bot.onText(/^\/\w+/, (msg, match) => {
   const command = match[0]; // Извлекаем команду из текста
   handleCommand(command, msg);
 });
+
+// bot.on('text', async msg => {
+
+//     console.log(msg);
+
+// })
 
 // Обработка всех остальных сообщений
 bot.on('message', async (msg) => {
@@ -119,43 +126,6 @@ bot.on('photo', async (img) => {
 
       const result = await handlers.handleAiImg(img, base64Img, mimeType);
       bot.sendMessage(img.chat.id, result || 'Команда обработана.')
-        
-    } catch (error) {
-      logger.error('Ошибка при обработке фото:', error);
-    }
-  }
-});
-
-bot.on('voice', async (msg) => {
-  if (msg?.caption && msg.caption.trim().startsWith("/ai")) {
-    try {
-      // Получаем информацию о фото
-      
-      const audio = msg.voice.file_id;
-
-      const file = await bot.getFile(fileId);
-
-      console.log(file.file_path);
-
-      const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
-
-      const extension = file.file_path.split(".").pop();
-      const mimeType = {
-        mp3: "audio/mpeg",
-        wav: "audio/wav",
-      }[extension] || "application/octet-stream";
-
-        // Качаем через fetch
-      const res = await fetch(fileUrl);
-      if (!res.ok) throw new Error(`Ошибка загрузки: ${res.status}`);
-      
-      // В Buffer
-      const arrayBuffer = await res.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const base64Audio = buffer.toString("base64");
-
-      const result = await handlers.handleAiVoice(msg, base64Audio, mimeType);
-      bot.sendMessage(msg.chat.id, result || 'Команда обработана.')
         
     } catch (error) {
       logger.error('Ошибка при обработке фото:', error);

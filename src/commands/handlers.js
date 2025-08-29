@@ -4,10 +4,11 @@ import { getBcse, toTextOfValues } from "../api/bcse.js";
 import { yapi } from "../api/yapi.js";
 import { getWeatherNow, getWeatherToday } from "../api/weather.js";
 import { scheduleDailyTask } from "../utils/timer.js";
-import { getAI, getAiImg } from "../api/gemini.js";
+import { getAI, getAiImg, getAiVoice } from "../api/gemini.js";
 import { addMessage, getMemory, logMemory, resetMemory } from '../utils/memory.js';
 
 const zapros = process.env.ZAPROS;
+const token = process.env.TELEGRAM_TOKEN;
 
 // Обработчик команды /start
 export function handleStart(msg) {
@@ -111,28 +112,83 @@ export async function handleAnalize(botSendMessage, messages) {
 }
 
 export async function handleAi(msg) {
+
+  let prompt = msg.text === "/ai" ? "Привет" : msg.text.replace(/^\/ai\s+/, "").trim();
+  if (!prompt) {
+    prompt = "Привет";
+  }
+
+  const chatId = msg.chat.id;
+
+  addMessage(chatId, 'user', prompt);
+
+  const context = getMemory(chatId);
+  const response = await getAI(prompt, context);
+
+  addMessage(chatId, 'model', response);
+  logMemory(chatId);
+  return response;
+
+}
+
+async function handleVoice(bot, promt, voice) {
+  try {
+    const fileId = voice.file_id;
+    const file = await bot.getFile(fileId);
+    const fileUrl = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
+
+    const mimeType = voice.mime_type;
+
+    // Качаем через fetch
+    const res = await fetch(fileUrl);
+    if (!res.ok) throw new Error(`Ошибка загрузки: ${res.status}`);
+
+    // В Buffer
+    const arrayBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64Audio = buffer.toString("base64");
+
+    return await getAiVoice(promt, base64Audio, mimeType);
+
+  } catch (error) {
+    logger.error('Ошибка при обработке голосового сообщения:', error);
+  }
+
+}
+
+export async function handleAiNew(bot, msg) {
+
+  let promt = msg.text.slice(3).trim();
+
+  if (!msg.reply_to_message) {
     
-    let prompt = msg.text === "/ai" ? "Привет" : msg.text.replace(/^\/ai\s+/, "").trim();
-    if (!prompt) {
-      prompt = "Привет";
+    if (!promt) {
+      promt = "Привет";
     }
 
     const chatId = msg.chat.id;
 
-    addMessage(chatId, 'user', prompt);
+    addMessage(chatId, 'user', promt);
 
     const context = getMemory(chatId);
-    const response = await getAI(prompt, context);
+    const response = await getAI(promt, context);
 
     addMessage(chatId, 'model', response);
     logMemory(chatId);
     return response;
+  }
+
+  const reply = msg.reply_to_message;
+
+  if (reply.voice) {
+    return handleVoice(bot, promt, reply.voice);
+  }
 
 }
 
 export async function handleAiImg(msg, img, imgType) {
-  
-  const txt = "Переведи весь текст на изображении на русский язык (если он есть). Затем дай краткое описание или характеристику изображения. Отвечай коротко.";
+
+  const txt = "Дай краткое описание изображения";
   let prompt = msg.caption === "/ai" ? txt : msg.caption.replace(/^\/ai\s+/, "").trim();
   if (!prompt) {
     prompt = txt
@@ -143,7 +199,7 @@ export async function handleAiImg(msg, img, imgType) {
 }
 
 export async function handleAiVoice(msg, voice, imgType) {
-  
+
   const txt = "Сделай траскрибацию этого аудио";
   let prompt = msg.caption === "/ai" ? txt : msg.caption.replace(/^\/ai\s+/, "").trim();
   if (!prompt) {
