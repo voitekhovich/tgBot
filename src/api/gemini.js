@@ -47,6 +47,11 @@ export async function getAiImg(prompt, base64ImageFile, mimeType) {
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
+      config: {
+      temperature: 0.4,
+      maxOutputTokens: 1000,
+      tools: [{urlContext: {}}, {googleSearch: {}}],
+    },
     contents: contents,
   });
 
@@ -65,4 +70,30 @@ export async function getAiImg(prompt, base64ImageFile, mimeType) {
   return chat.sendMessage({message: prompt})
     .then(result => result.text)
     .catch(error => `${error.message.split('\n')[0]}`);
+}
+
+export async function getAiVoice(prompt, base64AudioFile, mimeType) {
+
+  const contents = [
+    {
+      inlineData: {
+        mimeType: mimeType,
+        data: base64AudioFile,
+      },
+    },
+    { text: prompt },
+  ];
+
+  const response = await ai.models.generateContent({
+    model: "gemini-2.5-flash",
+      config: {
+      temperature: 0.4,
+      maxOutputTokens: 1000,
+      tools: [{urlContext: {}}, {googleSearch: {}}],
+    },
+    contents: contents,
+  });
+
+  return response.text;
+
 }

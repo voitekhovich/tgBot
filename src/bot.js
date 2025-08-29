@@ -124,11 +124,44 @@ bot.on('photo', async (img) => {
       logger.error('Ошибка при обработке фото:', error);
     }
   }
-
-  
-
 });
 
+bot.on('voice', async (msg) => {
+  if (msg?.caption && msg.caption.trim().startsWith("/ai")) {
+    try {
+      // Получаем информацию о фото
+      
+      const audio = msg.voice.file_id;
+
+      const file = await bot.getFile(fileId);
+
+      console.log(file.file_path);
+
+      const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
+
+      const extension = file.file_path.split(".").pop();
+      const mimeType = {
+        mp3: "audio/mpeg",
+        wav: "audio/wav",
+      }[extension] || "application/octet-stream";
+
+        // Качаем через fetch
+      const res = await fetch(fileUrl);
+      if (!res.ok) throw new Error(`Ошибка загрузки: ${res.status}`);
+      
+      // В Buffer
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64Audio = buffer.toString("base64");
+
+      const result = await handlers.handleAiVoice(msg, base64Audio, mimeType);
+      bot.sendMessage(msg.chat.id, result || 'Команда обработана.')
+        
+    } catch (error) {
+      logger.error('Ошибка при обработке фото:', error);
+    }
+  }
+});
 
 bot.on('polling_error', (err) => {
   logger.error(`Ошибка поллинга: ${err}`);

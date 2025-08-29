@@ -142,6 +142,18 @@ export async function handleAiImg(msg, img, imgType) {
 
 }
 
+export async function handleAiVoice(msg, voice, imgType) {
+  
+  const txt = "Сделай траскрибацию этого аудио";
+  let prompt = msg.caption === "/ai" ? txt : msg.caption.replace(/^\/ai\s+/, "").trim();
+  if (!prompt) {
+    prompt = txt
+  }
+  const response = await getAiVoice(prompt, voice, imgType);
+  return response;
+
+}
+
 export function handleReset(msg) {
   const chatId = msg.chat.id;
   resetMemory(chatId);
