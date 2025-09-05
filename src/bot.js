@@ -2,9 +2,10 @@ import 'dotenv/config';
 
 // Импортируем необходимые библиотеки
 import { Telegraf } from "telegraf";
-import { handleGeminiResponse, handleGeminiImage, handleGeminiAudio, handleGeminiVideo, handleGeminiDoc } from "./gemini.js";
-import logger from "./logger.js";
-import { addMessage, getMemory, logMemory, resetMemory } from './memory.js';
+import { handleGeminiResponse, handleGeminiImage, handleGeminiAudio, handleGeminiVideo, handleGeminiDoc } from "./api/gemini.js";
+import logger from "./utils/logger.js";
+import { addMessage, getMemory, logMemory, resetMemory } from './utils/memory.js';
+import { handleNekosApi, handleYapi } from './handlers.js';
 
 if (!process.env.TELEGRAM_BOT_TOKEN) {
   throw new Error("TELEGRAM_BOT_TOKEN не задан в .env");
@@ -15,13 +16,23 @@ const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
 
 bot.telegram.setMyCommands([
-  { command: "reset", description: "Сброс диалога" },
+  { command: "ai", description: "Gemini [/ai ] [/reset ]" },
+  { command: "img", description: "Осторожно, возможно письки!" },
+  { command: "300", description: "Пересказ статьи по url от yandex"},
 ]);
 
 
 bot.command("reset", async (ctx) => {
   resetMemory(ctx.chat.id);
   await ctx.reply("Диалог сброшен 🧹");
+});
+
+bot.command("img", async (ctx) => {
+  await handleNekosApi(ctx);
+});
+
+bot.command("300", async (ctx) => {
+  await handleYapi(ctx.text.slice(5));
 });
 
 
@@ -128,13 +139,6 @@ async function fileToBase64(fileUrl) {
   return Buffer.from(arrayBuffer).toString("base64");
 }
 
-
-// Запускаем бота
-bot.launch().catch(err => {
-  console.error('Ошибка при запуске бота:', err);
-});
-
-
 // Функция редактирование сообщений
 async function safeEdit(ctx, message, newText) {
   try {
@@ -144,6 +148,17 @@ async function safeEdit(ctx, message, newText) {
   }
 }
 
-// Для Docker
+bot.on('polling_started', () => {
+  logger.info("Бот запущен")
+});
+
+// Запускаем бота
+bot.launch()
+  .catch(err => {
+    logger.error(`Ошибка запуска бота! ${err}`);
+  });
+
+
+// Обработка graceful остановки (Для Docker)
 process.once("SIGINT", () => bot.stop("SIGINT"));
 process.once("SIGTERM", () => bot.stop("SIGTERM"));
