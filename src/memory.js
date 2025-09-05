@@ -1,8 +1,10 @@
 const memories = new Map(); // ключ — chatId, значение — массив сообщений
 
+const MEMORY_TIME = 15  // Время хранения памяти в минутах
+
 function cleanOldMessages(chatId) {
   const memory = memories.get(chatId) || [];
-  const cutoff = Date.now() - 15 * 60 * 1000;
+  const cutoff = Date.now() - MEMORY_TIME * 60 * 1000;
   const filtered = memory.filter(m => m.timestamp >= cutoff);
   memories.set(chatId, filtered);
 }

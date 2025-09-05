@@ -1,140 +1,149 @@
-process.env.NTBA_FIX_350 = true;  // Фикс, убирает уведомление о неподдерживаемой функции отправки файлов
-
 import 'dotenv/config';
 
-import fs from "fs";
-import TelegramBot from "node-telegram-bot-api";
+// Импортируем необходимые библиотеки
+import { Telegraf } from "telegraf";
+import { handleGeminiResponse, handleGeminiImage, handleGeminiAudio, handleGeminiVideo, handleGeminiDoc } from "./gemini.js";
+import logger from "./logger.js";
+import { addMessage, getMemory, logMemory, resetMemory } from './memory.js';
 
-import logger from "./utils/logger.js";
-import { menuCommands } from "./config/commands.js";
-import { getMessages } from "./utils/functions.js";
-import * as handlers from "./commands/handlers.js";
-import * as patterns from "./commands/patterns.js";
+if (!process.env.TELEGRAM_BOT_TOKEN) {
+  throw new Error("TELEGRAM_BOT_TOKEN не задан в .env");
+}
 
-logger.info("Сервер запущен")
+// Создаем экземпляр бота
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
-const token = process.env.TELEGRAM_TOKEN;
-const bot = new TelegramBot(token, { polling: true, interval: 700 });
-bot.setMyCommands(menuCommands);
 
-const chatId = process.env.CHAT_ID;
+bot.telegram.setMyCommands([
+  { command: "reset", description: "Сброс диалога" },
+]);
 
-logger.info("Бот запущен");
 
-// Последнее сообщение с url ссылкой
-const lastMsg = {
-  url: '',
-  mesgId: ''
-};
-
-const messageBuf = [];
-
-// ОТКЛЮЧИЛ АВТОИНФОРМЕРЫ
-// try {
-//   handlers.handleInformer((value, caption) => bot.sendPhoto(chatId, value, { disable_notification: false, caption: caption }))
-//   handlers.handleAnalize((value) => bot.sendMessage(chatId, value, { disable_notification: false }), messageBuf)
-// } catch (error) {
-//   logger.error(`Ошибка вызова информера! ${error}`);
-// }
-
-// Маппинг команд: команда => обработчик
-const commands = {
-  '/img': handlers.handlePhoto,
-  '/byn': handlers.handleBcse,
-  '/300': (msg) => handlers.handleYapi(lastMsg),
-  '/temp': handlers.handleTemp,
-  '/ai': (msg) => handlers.handleAi(msg),
-  '/reset': (msg) => handlers.handleReset(msg),
-};
-
-// Функция для обработки команд
-const handleCommand = async (command, msg) => {
-  const handler = commands[command];
-  if (!handler) return;
-  const result = await handler(msg);
-  // Маппинг действий по типу
-  const actions = {
-    sticker: () => bot.sendSticker(msg.chat.id, result.value),
-    photo: () => bot.sendPhoto(msg.chat.id, result.value, { caption: result.caption, has_spoiler: result.has_spoiler }),
-    animation: () => bot.sendAnimation(msg.chat.id, result.value),
-    html: () => bot.sendMessage(msg.chat.id, result.data, { parse_mode: "HTML", reply_to_message_id: result.msgId }),
-    default: () => bot.sendMessage(msg.chat.id, result || 'Команда обработана.'),
-  };
-  // Выполнение действия на основе типа или действия по умолчанию
-  (actions[result?.type] || actions.default)();
-};
-
-// Обработчик всех команд
-bot.onText(/^\/\w+/, (msg, match) => {
-  const command = match[0]; // Извлекаем команду из текста
-  handleCommand(command, msg);
-});
-
-// Обработка всех остальных сообщений
-bot.on('message', async (msg) => {
-  getMessages(msg, messageBuf)
-  patterns.checkMessageAndSendSticker(msg)
-    .then(img => {
-      if (!img) return;
-      const imgStream = fs.createReadStream(img);
-      bot.sendSticker(msg.chat.id, imgStream, {
-        reply_to_message_id: msg.message_id
-      })
-        .catch(err => logger.error(`${err}`))
-    })
-  const url = await patterns.getUrlFromMessage(msg.text);
-  if (url != null) {
-    lastMsg.mesgId = msg.message_id;
-    lastMsg.url = url;
-  }
+bot.command("reset", async (ctx) => {
+  resetMemory(ctx.chat.id);
+  await ctx.reply("Диалог сброшен 🧹");
 });
 
 
-bot.on('photo', async (img) => {
-  if (img?.caption && img.caption.trim().startsWith("/ai")) {
-    try {
-      // Получаем информацию о фото
-      const photo = img.photo[img.photo.length - 1];
-      const fileId = photo.file_id;
+bot.on("message", async (ctx) => {
+  const msg = ctx.message;
+  const thinkingMsg = await ctx.reply("Размышляю...");
 
-      const file = await bot.getFile(fileId);
-      const fileUrl = `https://api.telegram.org/file/bot${token}/${file.file_path}`;
+  try {
+    let geminiResponse;
+    let caption;
 
-      const extension = file.file_path.split(".").pop(); // jpg, png, webp...
-      const mimeType = {
-        jpg: "image/jpeg",
-        jpeg: "image/jpeg",
-        png: "image/png",
-        webp: "image/webp",
-      }[extension] || "application/octet-stream";
+    // --- 1. Ответ на сообщение ---
+    if (msg.reply_to_message) {
+      const replied = msg.reply_to_message;
+      caption = msg.text || msg.caption || "Проанализируй это сообщение";
 
-        // Качаем через fetch
-      const res = await fetch(fileUrl);
-      if (!res.ok) throw new Error(`Ошибка загрузки: ${res.status}`);
-      
-      // В Buffer
-      const arrayBuffer = await res.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const base64Img = buffer.toString("base64");
+      geminiResponse = await processMessageContent(ctx, replied, caption);
 
-      const result = await handlers.handleAiImg(img, base64Img, mimeType);
-      bot.sendMessage(img.chat.id, result || 'Команда обработана.')
-        
-    } catch (error) {
-      logger.error('Ошибка при обработке фото:', error);
+      // --- 2. Пересланное сообщение ---
+    } else if (msg.forward_from || msg.forward_from_chat) {
+      caption = msg.caption || msg.text || "Проанализируй пересланное сообщение";
+
+      geminiResponse = await processMessageContent(ctx, msg, caption);
+
+      // --- 3. Обычное сообщение ---
+    } else {
+      caption = msg.text || msg.caption;
+      geminiResponse = await processMessageContent(ctx, msg, caption);
     }
+
+    // --- Ответ пользователю ---
+    if (geminiResponse) {
+      await safeEdit(ctx, thinkingMsg, geminiResponse);
+      addMessage(ctx.chat.id, "user", caption);
+      addMessage(ctx.chat.id, "model", geminiResponse);
+      logMemory(ctx.chat.id);
+    }
+
+  } catch (error) {
+    await safeEdit(ctx, thinkingMsg, "Ошибка при обработке сообщения");
+    console.error(error);
   }
-
-  
-
 });
 
 
-bot.on('polling_error', (err) => {
-  logger.error(`Ошибка поллинга: ${err}`);
-
-  if (err.code === 'EFATAL') {
-    logger.error("Критическая ошибка! Перезапускаем бота...");
-    process.exit(1);
+async function processMessageContent(ctx, msg, prompt) {
+  if (msg.photo) {
+    const photo = msg.photo[msg.photo.length - 1];
+    return await handleFile(ctx, photo.file_id, "image/jpeg", handleGeminiImage, prompt);
   }
+
+  if (msg.voice) {
+    const prompt = `Прослушай предоставленное голосовое сообщение.
+                    Извлеки основную информацию и ключевые моменты.
+                    Структурируй ответ в виде краткого резюме.
+                    Выдели главные идеи и тезисы.
+                    Предоставь краткий ответ в 3-4 предложениях`;
+    return await handleFile(ctx, msg.voice.file_id, "audio/ogg", handleGeminiAudio, prompt);
+  }
+
+  if (msg.video) {
+    return await handleFile(ctx, msg.video.file_id, "video/mp4", handleGeminiVideo, prompt);
+  }
+
+  if (msg.video_note) {
+    const prompt = `Просмотри предоставленное видео сообщение.
+                    Извлеки основную информацию и ключевые моменты.
+                    Структурируй ответ в виде краткого резюме.
+                    Выдели главные идеи и тезисы.
+                    Предоставь краткий ответ в 3-4 предложениях`;
+    return await handleFile(ctx, msg.video_note.file_id, "video/mp4", handleGeminiVideo, prompt);
+  }
+
+  // if (msg.document) {
+  //   return await handleFile(ctx, msg.document.file_id, "application/pdf", handleGeminiDoc, prompt);
+  // }
+
+  if (msg.text) {
+    console.log(`"${msg.text}" - ${prompt}`);
+    return await handleGeminiResponse(`"${msg.text}" - ${prompt}`);
+  }
+
+  return "Неизвестный тип сообщения 🤔";
+}
+
+
+async function handleFile(ctx, fileId, mimeType, handlerFn, prompt) {
+  const file = await ctx.telegram.getFile(fileId);
+  if (file.file_size > 20 * 1024 * 1024) {
+    return "❌ Файл больше 20 МБ";
+  }
+
+  const fileUrl = await ctx.telegram.getFileLink(fileId);
+  const base64 = await fileToBase64(fileUrl);
+
+  return await handlerFn(base64, prompt);
+}
+
+
+// Вспомогательная функция (скачивание файла → base64)
+async function fileToBase64(fileUrl) {
+  const response = await fetch(fileUrl);
+  const arrayBuffer = await response.arrayBuffer();
+  return Buffer.from(arrayBuffer).toString("base64");
+}
+
+
+// Запускаем бота
+bot.launch().catch(err => {
+  console.error('Ошибка при запуске бота:', err);
 });
+
+
+// Функция редактирование сообщений
+async function safeEdit(ctx, message, newText) {
+  try {
+    await ctx.telegram.editMessageText(ctx.chat.id, message.message_id, null, newText);
+  } catch {
+    await ctx.reply(newText); // fallback
+  }
+}
+
+// Для Docker
+process.once("SIGINT", () => bot.stop("SIGINT"));
+process.once("SIGTERM", () => bot.stop("SIGTERM"));
