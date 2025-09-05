@@ -43,7 +43,12 @@ export async function handleYapi(url) {
   try {
     if (url === '') return 'Отправьте ссылку на статью в чат и повтори запрос';
     const result = await yapi(url)
+    console.log(result);
+    
     const data = await getDataFromDOM(result.sharing_url)
+
+    console.log(sharing_url);
+
     await ctx.reply(data, { parse_mode: 'HTML' });
   } catch (error) {
     console.error(error);

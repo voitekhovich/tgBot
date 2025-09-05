@@ -14,11 +14,13 @@ if (!process.env.TELEGRAM_BOT_TOKEN) {
 // Создаем экземпляр бота
 const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN);
 
+let CHATMODE = false;
 
 bot.telegram.setMyCommands([
-  { command: "ai", description: "Gemini [/ai ] [/reset ]" },
+  { command: "ai", description: "Gemini [/ai ] [/reset ] [ии]" },
   { command: "img", description: "Осторожно, возможно письки!" },
-  { command: "300", description: "Пересказ статьи по url от yandex"},
+  { command: "ai2", description: "chat on (off)" },
+  // { command: "300", description: "Пересказ статьи по url от yandex"},
 ]);
 
 
@@ -31,12 +33,43 @@ bot.command("img", async (ctx) => {
   await handleNekosApi(ctx);
 });
 
-bot.command("300", async (ctx) => {
-  await handleYapi(ctx.text.slice(5));
-});
-
+// bot.command("300", async (ctx) => {
+//   await handleYapi(ctx.text.slice(5));
+// });
 
 bot.on("message", async (ctx) => {
+
+  const text = ctx.message.text || "";
+
+  if (text.toLowerCase().startsWith("chat on")) {
+    CHATMODE = true;
+    await ctx.reply('Включен режим чата');
+    return
+  }
+   if (text.toLowerCase().startsWith("chat off")) {
+    CHATMODE = false;
+    await ctx.reply('Режим чата выключен');
+    return
+  }
+
+  if (CHATMODE) {
+    await geminiChat(ctx)
+    return
+  }
+
+  if (text.toLowerCase().startsWith("ии")) {
+    await geminiChat(ctx);
+    return
+  }
+  
+})
+
+bot.command("ai", async (ctx) => {
+  geminiChat(ctx)
+});
+
+async function geminiChat(ctx) {
+
   const msg = ctx.message;
   const thinkingMsg = await ctx.reply("Размышляю...");
 
@@ -75,8 +108,8 @@ bot.on("message", async (ctx) => {
     await safeEdit(ctx, thinkingMsg, "Ошибка при обработке сообщения");
     console.error(error);
   }
-});
 
+}
 
 async function processMessageContent(ctx, msg, prompt) {
   if (msg.photo) {
@@ -85,12 +118,12 @@ async function processMessageContent(ctx, msg, prompt) {
   }
 
   if (msg.voice) {
-    const prompt = `Прослушай предоставленное голосовое сообщение.
+    const voicePrompt = prompt || `Прослушай предоставленное голосовое сообщение.
                     Извлеки основную информацию и ключевые моменты.
                     Структурируй ответ в виде краткого резюме.
                     Выдели главные идеи и тезисы.
                     Предоставь краткий ответ в 3-4 предложениях`;
-    return await handleFile(ctx, msg.voice.file_id, "audio/ogg", handleGeminiAudio, prompt);
+    return await handleFile(ctx, msg.voice.file_id, "audio/ogg", handleGeminiAudio, voicePrompt);
   }
 
   if (msg.video) {
@@ -98,12 +131,12 @@ async function processMessageContent(ctx, msg, prompt) {
   }
 
   if (msg.video_note) {
-    const prompt = `Просмотри предоставленное видео сообщение.
+    const videoPrompt = prompt || `Просмотри предоставленное видео сообщение.
                     Извлеки основную информацию и ключевые моменты.
                     Структурируй ответ в виде краткого резюме.
                     Выдели главные идеи и тезисы.
                     Предоставь краткий ответ в 3-4 предложениях`;
-    return await handleFile(ctx, msg.video_note.file_id, "video/mp4", handleGeminiVideo, prompt);
+    return await handleFile(ctx, msg.video_note.file_id, "video/mp4", handleGeminiVideo, videoPrompt);
   }
 
   // if (msg.document) {
