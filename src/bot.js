@@ -37,6 +37,11 @@ bot.command("img", async (ctx) => {
 //   await handleYapi(ctx.text.slice(5));
 // });
 
+bot.command("ai", async (ctx) => {
+  ctx.message.text = ctx.message.text.slice(4);
+  geminiChat(ctx)
+});
+
 bot.on("message", async (ctx) => {
 
   const text = ctx.message.text || "";
@@ -57,18 +62,18 @@ bot.on("message", async (ctx) => {
     return
   }
 
-  if (text.toLowerCase().startsWith("ии")) {
+  if (text.toLowerCase().startsWith("ии ")) {
+    ctx.message.text = ctx.message.text.slice(3);
     await geminiChat(ctx);
     return
   }
   
 })
 
-bot.command("ai", async (ctx) => {
-  geminiChat(ctx)
-});
-
 async function geminiChat(ctx) {
+
+  console.log(ctx);
+  
 
   const msg = ctx.message;
   const thinkingMsg = await ctx.reply("Размышляю...");

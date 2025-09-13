@@ -17,16 +17,17 @@ globalThis.fetch = (url, options) => {
 // *************** G E M I N I ***************
 
 const CONFIG = {
-  temperature: 0.4,
-  maxOutputTokens: 1000,
+  temperature: 0.5,
+  maxOutputTokens: 999,
   // outputTokenLimit: 1000,
   thinkingConfig: { thinkingBudget: -1 },
   tools: [
     { urlContext: {} },
     { googleSearch: {} }
   ],
-  systemInstruction: `Ты дружелюбный ассистент. Геолокация - Минск.
-                      Общайся свободно, проверяй факты и отвечай коротко. Отвечай обычным текстом`,
+  systemInstruction: `Ты дружелюбный ассистент.
+                      Общайся свободно, проверяй факты, будь кратким, можешь использовать смайлики.
+                      Если пользователь запросит информацию для которой необходима геолокация, то по умолчанию используй город Минск`,
 };
 
 // Инициализируем GenAI клиент
