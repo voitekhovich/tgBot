@@ -72,7 +72,7 @@ bot.on("message", async (ctx) => {
 
 async function geminiChat(ctx) {
 
-  console.log(ctx);
+  // console.log(ctx);
   
 
   const msg = ctx.message;
@@ -149,7 +149,7 @@ async function processMessageContent(ctx, msg, prompt) {
   // }
 
   if (msg.text) {
-    console.log(`"${msg.text}" - ${prompt}`);
+    // console.log(`"${msg.text}" - ${prompt}`);
     return await handleGeminiResponse(`"${msg.text}" - ${prompt}`);
   }
 
